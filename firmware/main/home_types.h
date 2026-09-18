@@ -101,6 +101,10 @@ typedef struct {
     home_weather_t weather;
     home_feed_t feed;
     home_air_t air;
+     // Dodajemy nowe dane do głównej struktury:
+    float local_temperature;
+    float local_humidity;
+    bool local_sensor_valid;
 } home_data_t;
 
 /* Counters kept across restarts, written at most once every few minutes. */

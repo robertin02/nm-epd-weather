@@ -3,6 +3,7 @@
 #include "home_places.h"
 #include "home_discovery.h"
 #include "home_panel.h"
+#include "home_aht20.h"
 #include "driver/gpio.h"
 #include "esp_timer.h"
 #include "esp_random.h"
@@ -506,6 +507,9 @@ void app_main(void)
         xTaskCreate(home_battery_task, "home_battery", 3072, NULL, 1, NULL) != pdPASS) {
         ESP_LOGE(TAG, "Task creation failed");
         abort();
+    }
+    if (xTaskCreate(home_aht20_task, "home_aht20", 3072, NULL, 2, NULL) != pdPASS) {
+        ESP_LOGE(TAG, "Task creation failed for AHT20");
     }
     ESP_LOGI(TAG, "BOOT emini_home_g3 %s; local panel active; stock NVS untouched",
              esp_app_get_description()->version);
