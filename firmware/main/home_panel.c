@@ -40,13 +40,20 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define PANEL_RAIL GPIO_NUM_6
-#define PANEL_BUSY GPIO_NUM_8
-#define PANEL_RST GPIO_NUM_9
-#define PANEL_DC GPIO_NUM_10
-#define PANEL_CS GPIO_NUM_11
-#define PANEL_SCK GPIO_NUM_12
-#define PANEL_MOSI GPIO_NUM_13
+#define PANEL_RAIL GPIO_NUM_21 // Pin zasilania ekranu (EPD_PWR)
+#define PANEL_BUSY GPIO_NUM_6  
+#define PANEL_RST GPIO_NUM_5   
+#define PANEL_DC GPIO_NUM_4    
+#define PANEL_CS GPIO_NUM_46   
+#define PANEL_SCK GPIO_NUM_2   
+#define PANEL_MOSI GPIO_NUM_1
+// #define PANEL_RAIL GPIO_NUM_6
+// #define PANEL_BUSY GPIO_NUM_8
+// #define PANEL_RST GPIO_NUM_9
+// #define PANEL_DC GPIO_NUM_10
+// #define PANEL_CS GPIO_NUM_11
+// #define PANEL_SCK GPIO_NUM_12
+// #define PANEL_MOSI GPIO_NUM_13
 #define PANEL_SPI SPI3_HOST
 #define BUSY_TIMEOUT_US INT64_C(120000000)
 #define REFRESH_ASSERT_TIMEOUT_US INT64_C(1000000)
@@ -129,7 +136,9 @@ static esp_err_t wait_idle(const char *stage)
 {
     int64_t start = esp_timer_get_time();
     int64_t last_log = start;
-    while (gpio_get_level(PANEL_BUSY) == 0) {
+    // Było: while (gpio_get_level(PANEL_BUSY) == 0) {
+    // Zmień na:
+    while (gpio_get_level(PANEL_BUSY) == 1) {
         int64_t now = esp_timer_get_time();
         if (now - start >= BUSY_TIMEOUT_US) {
             return fault(ESP_ERR_TIMEOUT, stage);
@@ -149,7 +158,9 @@ static esp_err_t wait_idle(const char *stage)
 static esp_err_t wait_refresh_asserted(void)
 {
     int64_t start = esp_timer_get_time();
-    while (gpio_get_level(PANEL_BUSY) != 0) {
+    // Było: while (gpio_get_level(PANEL_BUSY) != 0) {
+    // Zmień na (czekaj aż będzie równy 1, czyli zajęty):
+    while (gpio_get_level(PANEL_BUSY) != 1) {
         if (esp_timer_get_time() - start >= REFRESH_ASSERT_TIMEOUT_US) {
             return fault(ESP_ERR_TIMEOUT, "refresh did not assert BUSY");
         }
@@ -259,7 +270,7 @@ esp_err_t home_panel_power_off(void)
     PANEL_TRY(data(0x00), "power-off data");
     PANEL_TRY(wait_idle("power off"), "power-off BUSY");
     delay_ms(20);
-    PANEL_TRY(command(0x07), "deep-sleep command");
+    PANEL_TRY(command(0x07), "deep-sleep command"); //tutaj jak nie bedzie dzialac to dac command 0x10 i data 0x11
     PANEL_TRY(data(0xA5), "deep-sleep data");
     PANEL_TRY(set_rail(0), "normal rail off");
     panel_state = PANEL_OFF;
@@ -268,6 +279,50 @@ esp_err_t home_panel_power_off(void)
 
 esp_err_t home_panel_show(const uint8_t *frame, size_t len)
 {
+    // if (frame == NULL || len != HOME_PANEL_FRAME_BYTES) {
+    //     return ESP_ERR_INVALID_ARG;
+    // }
+    // if (check_owner(false) != ESP_OK || panel_state != PANEL_OFF) {
+    //     return ESP_ERR_INVALID_STATE;
+    // }
+    // int64_t start = esp_timer_get_time();
+    // panel_state = PANEL_ACTIVE;
+    // PANEL_TRY(set_rail(1), "rail on");
+    // delay_ms(10);
+    // PANEL_TRY(gpio_set_level(PANEL_RST, 1), "reset high");
+    // delay_ms(10);
+    // PANEL_TRY(gpio_set_level(PANEL_RST, 0), "reset low");
+    // delay_ms(20);
+    // PANEL_TRY(gpio_set_level(PANEL_RST, 1), "reset release");
+    // delay_ms(10);
+    // PANEL_TRY(wait_idle("reset"), "reset BUSY");
+    // /* Four-colour source path uses OTP and returns here; deliberately omit
+    //  * the monochrome 00 2F 2E and temperature/LUT adaptation commands. */
+    // PANEL_TRY(command(0xE9), "OTP command");
+    // PANEL_TRY(data(0x01), "OTP data");
+    // PANEL_TRY(command(0x10), "frame command");
+    // PANEL_TRY(wait_idle("frame write"), "frame BUSY");
+    // for (size_t row = 0; row < HOME_PANEL_HEIGHT; ++row) {
+    //     PANEL_TRY(transfer(1, frame + row * HOME_PANEL_ROW_BYTES,
+    //                        HOME_PANEL_ROW_BYTES), "frame row");
+    //     if ((row % 16U) == 15U) {
+    //         vTaskDelay(1);
+    //     }
+    // }
+    // PANEL_TRY(command(0x04), "power-on command");
+    // PANEL_TRY(wait_idle("power on"), "power-on BUSY");
+    // delay_ms(10);
+    // PANEL_TRY(command(0x12), "refresh command");
+    // PANEL_TRY(data(0x00), "refresh data");
+    // /* Home diagnostic guard: a pulled-up/unconnected BUSY is not success. */
+    // PANEL_TRY(wait_refresh_asserted(), "refresh BUSY assertion");
+    // delay_ms(10);
+    // PANEL_TRY(wait_idle("refresh"), "refresh BUSY completion");
+    // panel_state = PANEL_REFRESHED;
+    // PANEL_TRY(home_panel_power_off(), "normal power-down");
+    // ESP_LOGI(TAG, "Refresh cycle completed; rail off; elapsed_ms=%ld",
+    //          (long)((esp_timer_get_time() - start) / 1000));
+    // return ESP_OK;
     if (frame == NULL || len != HOME_PANEL_FRAME_BYTES) {
         return ESP_ERR_INVALID_ARG;
     }
@@ -276,6 +331,8 @@ esp_err_t home_panel_show(const uint8_t *frame, size_t len)
     }
     int64_t start = esp_timer_get_time();
     panel_state = PANEL_ACTIVE;
+    
+    // --- WYBUDZENIE I RESET ---
     PANEL_TRY(set_rail(1), "rail on");
     delay_ms(10);
     PANEL_TRY(gpio_set_level(PANEL_RST, 1), "reset high");
@@ -285,28 +342,67 @@ esp_err_t home_panel_show(const uint8_t *frame, size_t len)
     PANEL_TRY(gpio_set_level(PANEL_RST, 1), "reset release");
     delay_ms(10);
     PANEL_TRY(wait_idle("reset"), "reset BUSY");
-    /* Four-colour source path uses OTP and returns here; deliberately omit
-     * the monochrome 00 2F 2E and temperature/LUT adaptation commands. */
-    PANEL_TRY(command(0xE9), "OTP command");
-    PANEL_TRY(data(0x01), "OTP data");
-    PANEL_TRY(command(0x10), "frame command");
-    PANEL_TRY(wait_idle("frame write"), "frame BUSY");
-    for (size_t row = 0; row < HOME_PANEL_HEIGHT; ++row) {
-        PANEL_TRY(transfer(1, frame + row * HOME_PANEL_ROW_BYTES,
-                           HOME_PANEL_ROW_BYTES), "frame row");
-        if ((row % 16U) == 15U) {
-            vTaskDelay(1);
-        }
-    }
-    PANEL_TRY(command(0x04), "power-on command");
-    PANEL_TRY(wait_idle("power on"), "power-on BUSY");
+
+    // --- INICJALIZACJA EKRANU (Z GxEPD2) ---
+    PANEL_TRY(command(0x12), "SWRESET");
     delay_ms(10);
-    PANEL_TRY(command(0x12), "refresh command");
-    PANEL_TRY(data(0x00), "refresh data");
-    /* Home diagnostic guard: a pulled-up/unconnected BUSY is not success. */
-    PANEL_TRY(wait_refresh_asserted(), "refresh BUSY assertion");
+    
+    PANEL_TRY(command(0x01), "Driver output control");
+    PANEL_TRY(data(0x2B), "HEIGHT-1 % 256"); // 43
+    PANEL_TRY(data(0x01), "HEIGHT-1 / 256"); // 1
+    PANEL_TRY(data(0x00), "0x00");
+
+    PANEL_TRY(command(0x3C), "BorderWaveform");
+    PANEL_TRY(data(0x05), "0x05");
+
+    PANEL_TRY(command(0x18), "Temp sensor");
+    PANEL_TRY(data(0x80), "0x80");
+
+    // Okno pamięci RAM
+    PANEL_TRY(command(0x11), "RAM entry mode");
+    PANEL_TRY(data(0x03), "normal mode");
+    
+    PANEL_TRY(command(0x44), "RAM X Start/End");
+    PANEL_TRY(data(0x00), "StartX");
+    PANEL_TRY(data(0x31), "EndX: 49"); // (400-1)/8
+    
+    PANEL_TRY(command(0x45), "RAM Y Start/End");
+    PANEL_TRY(data(0x00), "StartY L");
+    PANEL_TRY(data(0x00), "StartY H");
+    PANEL_TRY(data(0x2B), "EndY L");
+    PANEL_TRY(data(0x01), "EndY H");
+    
+    PANEL_TRY(command(0x4E), "RAM X counter");
+    PANEL_TRY(data(0x00), "0");
+    
+    PANEL_TRY(command(0x4F), "RAM Y counter");
+    PANEL_TRY(data(0x00), "0 L");
+    PANEL_TRY(data(0x00), "0 H");
+
+    // --- WYSYŁANIE GOTOWEJ WARSTWY CZARNO-BIAŁEJ ---
+    // Pobieramy pierwsze 15000 bajtów wygenerowanych przez nowe pixel()
+    PANEL_TRY(command(0x24), "BW frame command");
+    for (size_t row = 0; row < HOME_PANEL_HEIGHT; ++row) {
+        PANEL_TRY(transfer(1, frame + row * 50, 50), "BW frame row");
+        if ((row % 16U) == 15U) vTaskDelay(1);
+    }
+
+    // --- WYSYŁANIE GOTOWEJ WARSTWY CZERWONEJ ---
+    // Pobieramy drugie 15000 bajtów 
+    PANEL_TRY(command(0x26), "RED frame command");
+    for (size_t row = 0; row < HOME_PANEL_HEIGHT; ++row) {
+        PANEL_TRY(transfer(1, frame + 15000 + row * 50, 50), "RED frame row");
+        if ((row % 16U) == 15U) vTaskDelay(1);
+    }
+
+    // --- ODŚWIEŻANIE EKRANU ---
+    PANEL_TRY(command(0x22), "Update Sequence Options");
+    PANEL_TRY(data(0xF7), "0xF7");
+    PANEL_TRY(command(0x20), "Master Activation");
+    
     delay_ms(10);
     PANEL_TRY(wait_idle("refresh"), "refresh BUSY completion");
+
     panel_state = PANEL_REFRESHED;
     PANEL_TRY(home_panel_power_off(), "normal power-down");
     ESP_LOGI(TAG, "Refresh cycle completed; rail off; elapsed_ms=%ld",

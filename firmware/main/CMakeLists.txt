@@ -20,3 +20,5 @@ if(HOME_TESTCARD)
     # Measurement build only (plan 0.5.0 step 0.1): idf.py -DHOME_TESTCARD=1
     target_compile_definitions(${COMPONENT_LIB} PRIVATE HOME_TESTCARD=1)
 endif()
+
+

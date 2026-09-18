@@ -106,9 +106,15 @@ static void output(gpio_num_t pin, int value)
 }
 static int keys(void)
 {
-    return (!gpio_get_level(GPIO_NUM_39) ? 1 : 0) | (!gpio_get_level(GPIO_NUM_18) ? 2 : 0) |
-           (!gpio_get_level(GPIO_NUM_0) ? 4 : 0);
+    // return (!gpio_get_level(GPIO_NUM_39) ? 1 : 0) | (!gpio_get_level(GPIO_NUM_18) ? 2 : 0) |
+    //        (!gpio_get_level(GPIO_NUM_0) ? 4 : 0);
+
+    // Było: (!gpio_get_level(GPIO_NUM_39) ? 1 : 0) | (!gpio_get_level(GPIO_NUM_18) ? 2 : 0) | (!gpio_get_level(GPIO_NUM_0) ? 4 : 0);
+    
+    // Zmień na (45 to główny przycisk na RockBase, 0 to BOOT):
+    return (!gpio_get_level(GPIO_NUM_45) ? 2 : 0) | (!gpio_get_level(GPIO_NUM_0) ? 4 : 0);
 }
+
 /* "In turn" compositions: appearances per screen and when the current one started.
  * Only the main task (loop and action) touches these. */
 static uint32_t cycle_showing[HOME_SCREEN_COUNT];
@@ -395,13 +401,18 @@ static void buttons_tick(void)
 }
 void app_main(void)
 {
-    output(GPIO_NUM_17, 1);
-    output(GPIO_NUM_21, 0);
+    // output(GPIO_NUM_17, 1);
+    // output(GPIO_NUM_21, 0);
     output(GPIO_NUM_42, 0);
-    output(GPIO_NUM_46, 0);
-    gpio_config_t buttons = {.pin_bit_mask = (1ULL << 39) | (1ULL << 18) | 1ULL,
-                             .mode = GPIO_MODE_INPUT,
-                             .pull_up_en = GPIO_PULLUP_ENABLE};
+    // output(GPIO_NUM_46, 0);
+    // W app_main() zmień:
+    // gpio_config_t buttons = {.pin_bit_mask = (1ULL << 39) | (1ULL << 18) | 1ULL,
+        //                          .mode = GPIO_MODE_INPUT,
+        //                          .pull_up_en = GPIO_PULLUP_ENABLE};
+    gpio_config_t buttons = {.pin_bit_mask = (1ULL << 45) | (1ULL << 0), 
+                            .mode = GPIO_MODE_INPUT,
+                            .pull_up_en = GPIO_PULLUP_ENABLE};
+
     ESP_ERROR_CHECK(gpio_config(&buttons));
     home_runtime.lock = xSemaphoreCreateMutex();
     render_lock = xSemaphoreCreateMutex();

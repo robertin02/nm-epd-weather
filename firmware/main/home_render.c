@@ -226,16 +226,41 @@ static const char *const *words(int lang, const char *const *en, const char *con
 }
 static void pixel(canvas_t *c, int x, int y, int p)
 {
+    // if ((unsigned)x >= W || (unsigned)y >= H)
+    //     return;
+    // if (c->intensity == 0) {
+    //     if (p == YELLOW)
+    //         p = PAPER;
+    //     else if (p == RED)
+    //         p = BLACK;
+    // }
+    // unsigned i = (unsigned)y * 100u + (unsigned)x / 4u, shift = 6u - ((unsigned)x % 4u) * 2u;
+    // c->frame[i] = (uint8_t)((c->frame[i] & ~(3u << shift)) | ((unsigned)p << shift));
     if ((unsigned)x >= W || (unsigned)y >= H)
         return;
-    if (c->intensity == 0) {
-        if (p == YELLOW)
-            p = PAPER;
-        else if (p == RED)
-            p = BLACK;
+    
+    // Ignorujemy oryginalną intensywność, rzutując kolory pod ekran 3-kolorowy:
+    // Kolor żółty (YELLOW = 2) nie istnieje na Twoim ekranie, rzutujemy go na czerwony.
+    if (p == YELLOW) p = RED;
+
+    // Podział bufora:
+    // Pierwsza połowa (15000 bajtów) to warstwa Czarno-Biała (BW)
+    // Druga połowa (15000 bajtów) to warstwa Czerwona (RED)
+    unsigned byte_index = (unsigned)y * 50u + (unsigned)x / 8u; // 50 bajtów na wiersz dla 400px
+    unsigned bit_shift = 7u - ((unsigned)x % 8u);
+    
+    uint8_t *bw_frame = c->frame;
+    uint8_t *red_frame = c->frame + 15000;
+
+    // Ustawiamy puste tło dla obu (jeśli p == PAPER)
+    bw_frame[byte_index] |= (1 << bit_shift);       // 1 = Biały w warstwie BW
+    red_frame[byte_index] &= ~(1 << bit_shift);     // 0 = Brak czerwonego w warstwie RED
+
+    if (p == BLACK) {
+        bw_frame[byte_index] &= ~(1 << bit_shift);  // 0 = Czarny
+    } else if (p == RED) {
+        red_frame[byte_index] |= (1 << bit_shift);  // 1 = Czerwony
     }
-    unsigned i = (unsigned)y * 100u + (unsigned)x / 4u, shift = 6u - ((unsigned)x % 4u) * 2u;
-    c->frame[i] = (uint8_t)((c->frame[i] & ~(3u << shift)) | ((unsigned)p << shift));
 }
 static void rect(canvas_t *c, int x, int y, int w, int h, int p)
 {
@@ -2273,7 +2298,10 @@ void home_render(const home_config_t *cfg, const home_data_t *data, home_screen_
 {
     if (!frame)
         return;
-    memset(frame, 0x55, HOME_FRAME_BYTES);
+    // memset(frame, 0x55, HOME_FRAME_BYTES);
+    // Czysty papier na ekranie 3-kolorowym:
+    memset(frame, 0xFF, 15000);         // Warstwa BW: same 1 (biały)
+    memset(frame + 15000, 0x00, 15000); // Warstwa RED: same 0 (brak koloru)
     if (!cfg || !data)
         return;
     canvas_t c = {frame, (cfg->texture == 2 || cfg->texture == 4) ? cfg->texture : 1,
@@ -2363,7 +2391,10 @@ void home_render_info(const home_config_t *cfg, const home_stats_t *s, int64_t n
 {
     if (!frame || !cfg || !s)
         return;
-    memset(frame, 0x55, HOME_FRAME_BYTES);
+    // memset(frame, 0x55, HOME_FRAME_BYTES);
+    // Czysty papier na ekranie 3-kolorowym:
+    memset(frame, 0xFF, 15000);         // Warstwa BW: same 1 (biały)
+    memset(frame + 15000, 0x00, 15000); // Warstwa RED: same 0 (brak koloru)
     canvas_t c = {frame, (cfg->texture == 2 || cfg->texture == 4) ? cfg->texture : 1,
                   imin(cfg->intensity, 2), lang_of(cfg), RASTER_NOISE,
                   cfg->brush <= RASTER_GRID ? cfg->brush : RASTER_NOISE};
@@ -2430,7 +2461,10 @@ void home_render_setup(const char *ssid, const char *password, const char *code,
 {
     if (!frame)
         return;
-    memset(frame, 0x55, HOME_FRAME_BYTES);
+    // memset(frame, 0x55, HOME_FRAME_BYTES);
+    // Czysty papier na ekranie 3-kolorowym:
+    memset(frame, 0xFF, 15000);         // Warstwa BW: same 1 (biały)
+    memset(frame + 15000, 0x00, 15000); // Warstwa RED: same 0 (brak koloru)
     canvas_t c = {frame, 1, 2, lang, RASTER_NOISE, RASTER_NOISE};
     char wifi_payload[256], password_line[96];
     bool bounded_inputs = ssid && password && code && address && bounded(ssid, 33) <= 32 &&
@@ -2491,7 +2525,10 @@ void home_render_status(const char *title, const char *body, int lang,
 {
     if (!frame)
         return;
-    memset(frame, 0x55, HOME_FRAME_BYTES);
+    // memset(frame, 0x55, HOME_FRAME_BYTES);
+    // Czysty papier na ekranie 3-kolorowym:
+    memset(frame, 0xFF, 15000);         // Warstwa BW: same 1 (biały)
+    memset(frame + 15000, 0x00, 15000); // Warstwa RED: same 0 (brak koloru)
     canvas_t c = {frame, 1, 2, lang, RASTER_NOISE, RASTER_NOISE};
     status(&c, NULL, 0, title, body);
 }
@@ -2627,7 +2664,10 @@ void home_render_testcard(int card, uint8_t frame[HOME_FRAME_BYTES])
 {
     if (!frame)
         return;
-    memset(frame, 0x55, HOME_FRAME_BYTES);
+    // memset(frame, 0x55, HOME_FRAME_BYTES);
+    // Czysty papier na ekranie 3-kolorowym:
+    memset(frame, 0xFF, 15000);         // Warstwa BW: same 1 (biały)
+    memset(frame + 15000, 0x00, 15000); // Warstwa RED: same 0 (brak koloru)
     canvas_t c = {frame, 1, 2, LANG_EN, RASTER_NOISE, RASTER_NOISE};
     if (card == 0)
         card_ramps(&c);
