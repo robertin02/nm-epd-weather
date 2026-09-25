@@ -65,11 +65,31 @@ bool home_qr_wifi_text(const char *ssid, const char *password, char *out, size_t
         out[0] = 0;
     return ok;
 }
+// static void pixel(uint8_t *frame, int x, int y, bool black)
+// {
+//     unsigned at = (unsigned)y * 100 + (unsigned)x / 4, shift = 6 - ((unsigned)x & 3) * 2;
+//     frame[at] = (uint8_t)((frame[at] & ~(3u << shift)) | ((black ? 0u : 1u) << shift));
+// }
 static void pixel(uint8_t *frame, int x, int y, bool black)
 {
-    unsigned at = (unsigned)y * 100 + (unsigned)x / 4, shift = 6 - ((unsigned)x & 3) * 2;
-    frame[at] = (uint8_t)((frame[at] & ~(3u << shift)) | ((black ? 0u : 1u) << shift));
+    // Nowy układ pamięci: 1 bit na piksel = 50 bajtów na wiersz (dla 400px szerokości)
+    unsigned byte_index = (unsigned)y * 50u + (unsigned)x / 8u;
+    unsigned bit_shift = 7u - ((unsigned)x % 8u);
+
+    // Pierwsze 15000 bajtów to matryca Czarno-Biała, kolejne 15000 to matryca Czerwona
+    uint8_t *bw_frame = frame;
+    uint8_t *red_frame = frame + 15000;
+
+    if (black) {
+        bw_frame[byte_index] &= ~(1u << bit_shift);  // 0 = Czarny
+    } else {
+        bw_frame[byte_index] |= (1u << bit_shift);   // 1 = Biały tło
+    }
+    
+    // Zdejmujemy ewentualny czerwony "szum" z tego miejsca w drugiej połowie bufora
+    red_frame[byte_index] &= ~(1u << bit_shift);
 }
+
 bool home_qr_paint(uint8_t frame[30000], const char *payload, int x, int y, int width, int height,
                    home_qr_layout_t *layout)
 {

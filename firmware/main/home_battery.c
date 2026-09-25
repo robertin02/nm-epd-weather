@@ -65,6 +65,6 @@ void home_battery_task(void *unused)
         home_lock();
         home_runtime.battery = sample;
         home_unlock();
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
