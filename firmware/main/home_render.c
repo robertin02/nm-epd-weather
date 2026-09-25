@@ -974,8 +974,9 @@ static void forecast_graph(canvas_t *c, const home_weather_t *w, int x, int y, i
                 pixel(c, xx + dx, yy, mix(c, xx + dx, yy, PAPER, BLACK, 0.72f));
     }
 }
-static void weather(canvas_t *c, const home_config_t *cfg, const home_weather_t *w, int64_t now)
+static void weather(canvas_t *c, const home_config_t *cfg, const home_data_t *d, int64_t now)
 {
+    const home_weather_t *w = &d->weather; // przywrócenie wskaźnika dla reszty kodu
     int lang = lang_of(cfg);
     bool f = cfg->units[0] == 'F';
     int style = cfg->style[HOME_WEATHER] <= HOME_ATLAS ? cfg->style[HOME_WEATHER] : HOME_PRINT;
@@ -1109,6 +1110,15 @@ static void weather(canvas_t *c, const home_config_t *cfg, const home_weather_t 
         txt(c, 14, 124 - lift, 170, 22, 1, range);
         txt(c, 14, 148 - lift, 171, 68 + lift, lift ? 3 : 2, sky);
         txt(c, 14, 236, 372, 23, 1, metrics);
+    }
+    if (d->local_sensor_valid) {
+    char local_txt[64];
+    // Sklejamy odczyty w jeden tekst (np. "W DOMU: 23.5 C / 45 %")
+    snprintf(local_txt, sizeof(local_txt), "W DOMU: %.1f C / %.0f %%", d->local_temperature, d->local_humidity);
+    
+    // Rysujemy na canvasie: (x: 250, y: 15, width: 140, height: 20, font: 1)
+    // Omijamy sekcje pogody, umieszczając to wysoko po prawej stronie.
+    txt(c, 210, 10, 180, 20, 1, local_txt); 
     }
     source_footer(c, cfg, &w->meta, now, "MET Norway · CC BY 4.0", w->forecast_at);
 }
@@ -2318,7 +2328,7 @@ void home_render(const home_config_t *cfg, const home_data_t *data, home_screen_
         top(&c, cfg, tr(c.lang, "Weather", "Pogoda"));
         empty(&c, cfg, HOME_WEATHER, HOME_EMPTY);
     } else if (screen == HOME_WEATHER)
-        weather(&c, cfg, &data->weather, now);
+        weather(&c, cfg, data, now); //weather(&c, cfg, &data->weather, now);
     else if (screen == HOME_SKY)
         sky(&c, cfg, now);
     else if (screen == HOME_FEED)
