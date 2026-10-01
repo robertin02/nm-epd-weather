@@ -46,16 +46,16 @@ esp_err_t home_power_init(void)
      *  - the power latch (17) and the panel rail (6), since the device lives or dies by them,
      *  - the front LED (3), so it stays off. */
     static const gpio_num_t keep_awake[] = {
-        GPIO_NUM_39, GPIO_NUM_18, GPIO_NUM_0, /* buttons: otherwise they would not wake the chip */
+        GPIO_NUM_45, GPIO_NUM_0,              /* RockBase buttons: otherwise they would not wake the chip */
         GPIO_NUM_17,                          /* power latch: the device lives or dies by it */
-        GPIO_NUM_3,                           /* front status LED: keep it off during light sleep */
-        GPIO_NUM_21,                          /* panel rail - ZMIENIONO NA 21 DLA NM-EPD-420 */
+        GPIO_NUM_43,                          /* battery ADC divider enable */
+        GPIO_NUM_21,                          /* panel rail */
         /* The panel control lines. A paper refresh takes 25 s and for most of it the loop only
          * waits for BUSY in vTaskDelay - so the chip MAY fall asleep in that time. If chip
          * select (CS) were left floating, the paper controller could see a spurious select in
          * the middle of its own cycle. Reset and the data/command line, for the same reason.
          * Released from the sleep configuration like the buttons. */
-        GPIO_NUM_46, GPIO_NUM_4, GPIO_NUM_5}; /* SPI CS, DC, RST - ZMIENIONO DLA NM-EPD-420 */
+        GPIO_NUM_46, GPIO_NUM_4, GPIO_NUM_5}; /* SPI CS, DC, RST */
     for (size_t i = 0; i < sizeof keep_awake / sizeof keep_awake[0]; ++i) {
         esp_err_t g = gpio_sleep_sel_dis(keep_awake[i]);
         if (g != ESP_OK)
@@ -66,7 +66,7 @@ esp_err_t home_power_init(void)
      * while the chip sleeps, so an edge simply never happens. The buttons are active low, so
      * "pressed" is the level we wake on; the edge interrupt registered in home_loop_begin()
      * stays as it is and does the work while the chip is awake. */
-    static const gpio_num_t buttons[] = {GPIO_NUM_39, GPIO_NUM_18, GPIO_NUM_0};
+    static const gpio_num_t buttons[] = {GPIO_NUM_45, GPIO_NUM_0};
     for (size_t i = 0; i < sizeof buttons / sizeof buttons[0]; ++i) {
         esp_err_t g = gpio_wakeup_enable(buttons[i], GPIO_INTR_LOW_LEVEL);
         if (g != ESP_OK)

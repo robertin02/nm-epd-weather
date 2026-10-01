@@ -6,6 +6,7 @@
 #include "esp_timer.h"
 #include "esp_random.h"
 #include "esp_crc.h"
+#include "esp_heap_caps.h"
 #include "miniz.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -21,8 +22,9 @@
 #include <string.h>
 #include <strings.h>
 
-#define WIRE_MAX (128U * 1024U)
-#define TEXT_MAX (128U * 1024U)
+#define WIRE_MAX (256U * 1024U)
+#define TEXT_MAX (256U * 1024U)
+#define BODY_LIMIT (256U * 1024U)
 #define HEADER_MAX (16U * 1024U)
 #define LINE_MAX_BYTES 8192U /* GitHub Atom sends a ~3.6KiB CSP header. */
 #define REQUEST_US INT64_C(25000000)
@@ -553,7 +555,7 @@ static char *inflate_body(const uint8_t *b, size_t n, const char *encoding, size
         if (start >= end || little(b + n - 4) > TEXT_MAX)
             return NULL;
     }
-    char *out = malloc(TEXT_MAX + 1);
+    char *out = heap_caps_malloc(TEXT_MAX + 1, MALLOC_CAP_SPIRAM);
     if (!out)
         return NULL;
     size_t length = tinfl_decompress_mem_to_mem(out, TEXT_MAX, b + start, end - start,
@@ -576,7 +578,7 @@ static esp_err_t fetch_scoped(const char *initial, const home_source_meta_t *old
         return ESP_ERR_INVALID_SIZE;
     *text = NULL;
     *size = 0;
-    uint8_t *wire = malloc(WIRE_MAX);
+    uint8_t *wire = heap_caps_malloc(WIRE_MAX, MALLOC_CAP_SPIRAM);
     reader_t *r = calloc(1, sizeof(*r));
     char *line = malloc(LINE_MAX_BYTES + 1), *request = malloc(2048);
     if (!wire || !r || !line || !request) {
@@ -969,7 +971,7 @@ esp_err_t home_fetch_weather(const home_config_t *c, home_weather_t *w, int64_t 
     double lat = round(c->latitude * 10000.0) / 10000.0,
            lon = round(c->longitude * 10000.0) / 10000.0;
     snprintf(url, sizeof(url),
-             "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%.4f&lon=%.4f", lat,
+             "https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=%.4f&lon=%.4f", lat,
              lon);
     home_source_meta_t validators = w->meta;
     /* We cache a selected forecast, not the provider's entire series. A 304

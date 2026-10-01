@@ -6,16 +6,17 @@ what the release contains.
 
 ## Requirements
 
-- [ESP-IDF v6.0](https://docs.espressif.com/projects/esp-idf/en/v6.0/esp32s3/get-started/)
-  (tag `v6.0`, commit `662a3be354759d9487bf4b1a629fadb766cb1800`), installed
+- [ESP-IDF v6.0.2](https://docs.espressif.com/projects/esp-idf/en/v6.0/esp32s3/get-started/), installed
   with Espressif's instructions for ESP32-S3 and activated in your shell.
 - Nothing else. The JSON, QR code and mDNS components are included in
   `firmware/components`, and the font and time-zone tables are pre-generated.
+- **Note on ESP-IDF v6.0+:** This port uses the modern `esp_driver_i2c` component for the AHT20 sensor communication, replacing the deprecated legacy I2C driver.
 
 ## Build
 
 ```sh
 cd firmware
+
 export IDF_COMPONENT_MANAGER=0
 idf.py -DIDF_TARGET=esp32s3 reconfigure
 idf.py build
@@ -23,7 +24,7 @@ idf.py build
 
 `IDF_COMPONENT_MANAGER=0` keeps the build offline and uses only the components
 in this repository, the same way the release was built. In PowerShell, set the
-variable with `$env:IDF_COMPONENT_MANAGER=0` instead of `export`.
+variable with `$env:IDF_COMPONENT_MANAGER=0` instead of `export`. and `$env:IDF_TARGET=""`
 
 The results are:
 
@@ -33,6 +34,10 @@ The results are:
 The phone panel in `firmware/ui` is embedded into the application at build
 time. The version in the device's status and in its mDNS announcement comes
 from `PROJECT_VER` in `firmware/CMakeLists.txt`.
+
+## PSRAM Configuration
+
+The RockBase NM-EPD-420 requires external RAM for frame buffer allocations. Ensure that **Octal Mode PSRAM** is enabled in `idf.py menuconfig` (`Component config` -> `ESP PSRAM` -> `Support for external, SPI-connected RAM`).
 
 ## Generated files
 
@@ -65,8 +70,7 @@ or a newer time zone release, please open an issue.
 
 The release configuration is `firmware/sdkconfig.defaults`, expanded by
 ESP-IDF v6.0 into the full `sdkconfig` that is attached to the
-[v0.5.0 release](https://github.com/fiedoruk/emini-home/releases/tag/v0.5.0)
-for reference.
+release for reference.
 
 Your application image will not be byte-identical to the release image,
 because ESP-IDF stores the build date and time inside it. Everything else

@@ -1,51 +1,48 @@
 # Hardware
 
-emini Home 0.5.0 supports one device: the **ZECTRIX NOTE4C Devkit** with the
-four-colour display.
+emini Home 0.5.0 supports one device: the **RockBase NM-EPD-420** Devkit with the
+three-colour display.
 
 | Part | Details |
 | --- | --- |
-| Display | 400 × 300 e-paper, black, white, yellow and red pigments |
-| Chip | ESP32-S3 with native USB (tested unit: revision 0.2) |
+| Display | 4.2" 400 × 300 e-paper, black, white, and red pigments |
+| Chip | ESP32-S3 with native USB |
 | Memory | 16 MiB flash, 8 MiB octal PSRAM |
-| Controls | Up (GPIO39) and Down (GPIO18) on the right edge, OK / BOOT (GPIO0) on the face |
-| Notes | Down shares its line with the board's power key, so its level is less clean than the other two; a status LED sits on GPIO3 and a reset pinhole on RST/EN |
+| Controls | USER (GPIO 45) and BOOT (GPIO 0) on the board |
+| Sensors | Onboard AHT20 Temperature and Humidity sensor (I2C) |
 | Connectivity | 2.4 GHz Wi-Fi |
 
-The monochrome NOTE4 uses a different display and needs its own firmware.
-Other ZECTRIX models and other ESP32-S3 boards are not supported either. A USB
+The original ZECTRIX NOTE4C hardware is not covered by this specific port. A USB
 chip ID only tells you the board has an ESP32-S3, and the preflight check in
-the [installation guide](INSTALL.md) cannot tell a NOTE4 from a NOTE4C. Check
-that the device in front of you is a NOTE4C with the four-colour display
+the [installation guide](INSTALL.md) cannot tell different boards apart. Check
+that the device in front of you is a RockBase NM-EPD-420 with the three-colour display
 before you install.
 
 ## Pins
 
-Pin mapping follows the manufacturer's
-[NOTE4C quick start](https://wiki.zectrix.com/en/hardware/note4c/quick-start)
-and the reference firmware by LazyYoun at commit
-[`51812e4`](https://github.com/LazyYoun/youn-ink-fourcolor-firmware/tree/51812e4ab3fa80ba7a5a5a274635ca2cf3901a25).
+Pin mapping has been entirely adapted for the RockBase hardware configuration. It follows the manufacturer's
+[ESP32-S3 GPIO map](https://github.com/RockBase-iot/NM-EPD-420#33-esp32-s3-gpio-map).
 
 | Function | GPIO |
 | --- | --- |
-| Display SPI clock, data, chip select | 12, 13, 11 |
-| Display data/command, reset, busy | 10, 9, 8 |
-| Display power | 6 |
-| Buttons: Up, Down, OK / BOOT | 39, 18, 0 |
-| Power latch | 17 |
+| Display SPI clock, data, chip select | 2, 1, 46 |
+| Display data/command, reset, busy | 4, 5, 6 |
+| Display power | 21 |
+| Buttons: USER, BOOT | 45, 0 |
 | Native USB D−, D+ | 19, 20 |
-| Battery voltage | 4 (ADC1 channel 3, 2:1 divider) |
-| Charger: charging (active low), full (active high) | 2, 1 |
+| Battery voltage | 3 (ADC channel 2) |
+| Battery ADC Enable | 43 |
+| AHT20 I2C SDA, SCL | 39, 38 |
+| AHT20 Power Enable | 40 |
 
 ## Display
 
-A frame is 30,000 bytes: 2 bits per pixel, 4 pixels per byte, most
-significant bits first. Index 0 is black, 1 is white (paper), 2 is yellow and
-3 is red. Home sends only full refreshes. On the tested unit, powered over
-USB, a full change of the image took about 25 seconds. Home skips the refresh
+A frame is 30,000 bytes, split into two 15,000-byte layers for a three-colour (black, white, red) display.
+Home sends only full refreshes. On the tested unit, powered over
+USB, a full change of the image takes time depending on the exact E-Ink panel model. Home skips the refresh
 when the new frame is identical to the one on screen.
 
-Dither patterns never place yellow or red in steps finer than 2 pixels, while
+Dither patterns never place colours in steps finer than 2 pixels, while
 black and paper patterns can use single pixels.
 
 Colours in screenshots and on the website are an approximation of the
@@ -54,13 +51,10 @@ pigments, not a colorimeter measurement.
 ## Display driver and time zones
 
 The display driver in `firmware/main/home_panel.c` adapts the pin map and the
-four-colour command sequence from LazyYoun's reference firmware at commit
-`51812e4` (`config.h` and `custom_lcd_display.cc`), under the MIT notice kept
-at the top of that file. Home's changes: it sends only full refreshes, checks
+command sequence for the RockBase display. Home's changes: it sends only full refreshes, checks
 that the panel really starts each refresh, waits for the BUSY line for at most
 120 seconds, and stops with a fault instead of retrying when the panel does not
-respond. The battery percentage curve in `firmware/main/home_battery.c` comes
-from the same firmware.
+respond.
 
 The time zone table in `firmware/main/generated/home_zones.c` is compiled from
 the [IANA Time Zone Database](https://www.iana.org/time-zones), release 2026c,
@@ -69,15 +63,19 @@ which is in the public domain.
 ## Battery indicator
 
 Home reads the battery voltage ten times every 30 seconds and averages the
-calibrated readings. Readings outside 2,800–4,350 mV count as unknown.
+calibrated readings. On the RockBase NM-EPD-420, it reads ADC channel 2 on GPIO 3, and enables the voltage divider by pulling GPIO 43 high before reading. Readings outside 2,800–4,350 mV count as unknown.
 Charger signals must stay stable for a second before the panel shows them.
 
 While not charging, the panel estimates a percentage from the voltage with the
-curve used by the reference firmware, clamped to 0–100 %:
+curve clamped to 0–100 %:
 `(-V*V + 9016*V - 19189000) / 10000`, where `V` is in millivolts. It is a
 rough estimate, not a fuel gauge, and it is hidden while charging. Battery
 life has not been measured yet, and this release keeps Wi-Fi on without deep
 sleep.
+
+## Environmental Sensor
+
+Unlike the original emini Home which relied solely on internet weather APIs, this port utilizes the onboard AHT20 sensor to display local indoor temperature and humidity. The sensor runs on a dedicated FreeRTOS background task, querying the I2C bus every 10 seconds and feeding the data to the main rendering engine.
 
 ## Flash layout
 

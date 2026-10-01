@@ -1,6 +1,6 @@
 # Privacy
 
-emini Home runs entirely on the NOTE4C. The phone panel, your settings, the
+emini Home runs entirely on the RockBase NM-EPD-420. The phone panel, your settings, the
 schedule, the rendering and the saved data all live on the device. There is no
 emini account, no emini cloud service and no computer that has to stay on. The
 firmware contains no analytics or telemetry.
@@ -22,7 +22,7 @@ address from any of these requests.
 | `pool.ntp.org` time servers | Home | at start and then hourly | time requests, plus your home IP address |
 
 Requests from Home identify the software with the User-Agent
-`emini-home/0.4 (+https://github.com/fiedoruk/emini-home)`: its name and
+`emini-home/0.5 (+https://github.com/fiedoruk/emini-home)`: its name and
 version, followed by the project page as a contact address, which weather
 services ask clients to include. The same text is sent from every device and
 does not identify you.
@@ -70,7 +70,7 @@ air quality, UV and pollen. Switch that screen off and Home stops asking.
 
 Settings, including the location you saved, the home Wi-Fi password, the setup
 network password and cached data are stored in flash **without encryption**.
-Anyone with the device and a USB cable can read them. Treat a NOTE4C like a
+Anyone with the device and a USB cable can read them. Treat a RockBase like a
 router you own: keep it in your home, and
 [erase Home's settings over USB](INSTALL.md#starting-over) before giving it
 away. Installing Home and starting over leave the factory firmware's own

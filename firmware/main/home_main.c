@@ -834,7 +834,7 @@ void app_main(void)
     /* The front LED is active low. A previous firmware can leave GPIO3 held
      * low across a software reset, so release it and drive it off explicitly. */
     ESP_ERROR_CHECK(gpio_hold_dis(GPIO_NUM_3));
-    output(GPIO_NUM_3, 1);
+    // output(GPIO_NUM_3, 1);
     output(GPIO_NUM_17, 1);
     // output(GPIO_NUM_21, 0); TWOJE: Panel używa 21 jako zasilania VCC
     output(GPIO_NUM_42, 0);

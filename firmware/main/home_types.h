@@ -66,7 +66,7 @@ typedef struct {
 typedef struct {
     home_source_meta_t meta;
     int64_t forecast_at; /* validity time of temperature/hourly[0], separate from model issue */
-    double temperature, low, high, precipitation, wind_speed, cloud_cover;
+    double temperature, low, high, precipitation, wind_speed, cloud_cover, pressure;
     char symbol[49];
     double hourly_temperature[12], hourly_rain[12];
     uint8_t hourly_count;

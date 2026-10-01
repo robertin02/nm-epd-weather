@@ -1,28 +1,30 @@
-# emini Home
+# nm-epd-weather
 
-**A calm, four-colour poster of your day for the ZECTRIX NOTE4C e-paper devkit.**
+**A calm, three-colour poster of your day for the RockBase NM-EPD-420 e-paper devkit.**
 
-`0.5.0` · [emini.ink](https://emini.ink/home/) · tested on one NOTE4C · ESP-IDF v6.0 · MIT
+`0.6.0` · Forked from [fiedoruk/emini-home](https://github.com/fiedoruk/emini-home) · tested on one NM-EPD-420 · ESP-IDF v6.0.2 · MIT
 
 <p align="center">
-  <img src="docs/images/note4c-photo.webp" width="720" alt="A ZECTRIX NOTE4C on a fridge door running emini Home 0.5.1. The Weather screen in the Print composition shows 15° in Czaplinek, 12–17 °C over 24 hours, cloud cover, a dithered band of the next hours, and the line Dry until 06:00 · Wind 3.4 m/s.">
+  <img src="docs/images/note4c-photo.webp" width="720" alt="A RockBase NM-EPD-420 on a fridge door running nm-epd-weather 0.6.0. The Weather screen in the Print composition shows 15° in Czaplinek, 12–17 °C over 24 hours, cloud cover, a dithered band of the next hours, and the line Dry until 06:00 · Wind 3.4 m/s.">
 </p>
-<p align="center"><sub>Photo of a NOTE4C running 0.5.1 · Weather in the Print composition</sub></p>
+<p align="center"><sub>Photo of a device running 0.6.0 · Weather in the Print composition</sub></p>
 
-emini Home puts the weather forecast, one headline, a note in your own words,
-the sky above you and the air you breathe on the NOTE4C's 400 × 300 display, using its black, white, red and
-yellow pigments. You set it up in your phone's browser, without an app or an
+nm-epd-weather puts the weather forecast, your indoor climate, one headline, a note in your own words,
+the sky above you and the air you breathe on the RockBase NM-EPD-420's 400 × 300 display, using its black, white, and red
+pigments. You set it up in your phone's browser, without an app or an
 account. After that the device does the rest on its own, and no emini.ink
 server sits in between.
 
-[Install](docs/INSTALL.md) · [Phone panel](docs/PANEL.md) · [Release 0.5.0](https://github.com/fiedoruk/emini-home/releases/tag/v0.5.0) · [Website](https://emini.ink/home/) · [Hardware report](https://github.com/fiedoruk/emini-home/issues/new?template=hardware-report.yml)
+This project is a custom port of the original `emini-home` repository, adapted specifically for the RockBase NM-EPD-420 which features an ESP32-S3 with 16 MiB flash, 8 MiB PSRAM, and an onboard AHT20 temperature and humidity sensor.
+
+[Install](docs/INSTALL.md) · [Phone panel](docs/PANEL.md) · [Build](docs/BUILD.md) · [Hardware](docs/HARDWARE.md)
 
 > [!WARNING]
-> Version 0.5.0 has been installed and tested on one NOTE4C. Read the
+> Version 0.6.0 has been installed and tested on one RockBase NM-EPD-420. Read the
 > [status](#status) before you install. The preflight check in the
 > installation guide tells you to stop if your device's boot data differs
-> from the tested one. It cannot tell a NOTE4 from a NOTE4C, and only the
-> four-colour NOTE4C is supported.
+> from the tested one. It cannot tell a monochrome board from a three-colour one, and only the
+> three-colour NM-EPD-420 is supported.
 
 ## One forecast, three compositions
 
@@ -30,7 +32,7 @@ server sits in between.
   <img src="docs/images/epaper-weather-rhythm.png" width="400" alt="Rhythm composition: a sample forecast for Lisbon with a dithered temperature curve for the next hours">
   <img src="docs/images/epaper-weather-atlas.png" width="400" alt="Atlas composition: the same sample forecast with a large sun and cloud on the left half">
 </p>
-<p align="center"><sub>Rhythm and Atlas, drawn on a computer by the 0.5.0 renderer from sample data. The photo at the top shows Print.</sub></p>
+<p align="center"><sub>Rhythm and Atlas, drawn on a computer by the renderer from sample data. The photo at the top shows Print.</sub></p>
 
 Rhythm draws the coming hours as a curve, and Atlas gives the sky half of the
 page. Each screen can keep one composition, or use **In turn** and move on to
@@ -38,14 +40,14 @@ the next one each time it comes back to the display. The weather screen shows
 the range for the next 24 hours under the temperature and a short line about precipitation,
 such as “Rain from 18:00”.
 
-There is no grey on this display, so the renderer mixes the four pigments in
+There is no grey on this display, so the renderer mixes the three pigments in
 ordered dither patterns to draw warmth, light and cloud. Coloured patterns are
 never finer than 2 pixels, while black and paper patterns can still use single
 pixels.
 
 ## Sky and Air
 
-Two more screens arrived in 0.5.0, both switched off until you enable them in the panel.
+Two more screens arrived in earlier versions, both switched off until you enable them in the panel.
 **Sky** shows sunrise, sunset, the length of the day and the Moon's phase, worked out on the
 device from your saved location; nothing is downloaded for it. **Air** shows the European
 air quality index, PM2.5 over the next 24 hours, the UV index with a sunscreen hint and,
@@ -56,15 +58,13 @@ same three compositions as the weather.
   <img src="docs/images/epaper-sky-print.png" width="400" alt="The Sky screen in the Print composition: the sunset time in large type, the length of the day, a warm dome with the sun in its current position and a strip of the whole day from night through dawn, day and dusk">
   <img src="docs/images/epaper-air-print.png" width="400" alt="The Air screen in the Print composition: the European air quality index in large type, the word Good, 24 hourly bars on a warm scale, a UV sun, the UV line and four pollen tiles">
 </p>
-<p align="center"><sub>Sky (Warsaw, equinox) and Air (Berlin, May), drawn from sample data by the 0.5.0 renderer</sub></p>
+<p align="center"><sub>Sky (Warsaw, equinox) and Air (Berlin, May), drawn from sample data</sub></p>
 
 ## Your brush
 
-Four pigments and no grey mean every tone on this display is a pattern. Since 0.5.0 the
+Three pigments and no grey mean every tone on this display is a pattern. The
 panel lets you choose the brush that paints it, in Settings → Appearance: grain (blue noise,
-the default), halftone dots, or the ordered grid of the earlier versions. The renderer was measured on a real NOTE4C with test
-cards before this release; yellow needs two pixels to exist at all, so no brush ever draws
-it finer.
+the default), halftone dots, or the ordered grid.
 
 ## One headline and your note
 
@@ -80,11 +80,15 @@ line from a friend, a few words to keep in view.
 
 Headlines and notes in Simplified Chinese are drawn with Noto Sans CJK glyphs
 (the whole of GB 2312, 6 763 characters, plus punctuation); lines break between
-characters, so a Chinese feed such as a news site's RSS works as it is. Since
-0.5.1 the screens themselves speak Simplified Chinese too: every label, footer
+characters, so a Chinese feed such as a news site's RSS works as it is.
+The screens themselves speak Simplified Chinese too: every label, footer
 and sentence, the date as 9月15日, and air quality, UV and pollen by name.
 Choose the language in the phone panel, or hold the lower side button for five
 seconds on the device.
+
+## Indoor Environmental Sensor
+
+Unlike the original emini-home which relied solely on internet weather APIs, this port utilizes the RockBase NM-EPD-420's onboard AHT20 sensor to display local indoor temperature and humidity. The sensor runs on a dedicated FreeRTOS background task, querying the I2C bus every 10 minutes and feeding the data to the main rendering engine.
 
 ## Set it up from your phone
 
@@ -92,7 +96,9 @@ On first start the display shows a setup screen. Join the **emini.ink** Wi-Fi
 network it shows, open `http://192.168.4.1`, type the pairing code from the
 display, and move the device onto your home network. From then on the panel
 lives at the device's own address on that network (Settings → Your device);
-the setup network exists only for the 5-minute setup window. Then search for your town,
+the setup network exists only for the 5-minute setup window. In Breath, the
+default power mode, press the round OK button on the device first and give it a
+few seconds: the panel then answers for five minutes. Then search for your town,
 pick your screens and their compositions, and choose one screen, a day rhythm
 or a rotation, with quiet hours for the night.
 
@@ -105,97 +111,110 @@ or a rotation, with quiet hours for the night.
 
 The [phone panel guide](docs/PANEL.md) walks through every step.
 
+## Breath and Open
+
+Since 0.6.0 nm-epd-weather has two power modes, chosen in the panel under Settings → Battery.
+
+* **Breath**, the default, turns Wi-Fi off between downloads. About twice an hour the device
+  switches the radio on, fetches the weather and the news, and lets it sleep again. While it sleeps the phone
+  panel cannot reach the device. Press the round OK button, wait a few seconds, and the
+  panel opens for five minutes. The five minutes start again whenever you ask for
+  something in the panel, such as opening it, a preview or a save; what the panel checks by
+  itself does not count.
+
+* **Open** keeps Wi-Fi connected, so the panel answers at any time, as in earlier releases.
+  The battery runs down roughly two to four times faster, by our estimate.
+
+On a USB cable and while the setup window is open, the device keeps Wi-Fi on in either mode.
+
 ## Install
 
-The short way is the web installer at [esp32ai.me/install](https://esp32ai.me/install?fw=emini-home):
-open it in Chrome or Edge, plug the NOTE4C in with a USB-C data cable and give it the
-firmware, either as a file you downloaded from the release or as a link to it.
-
-The careful way needs `esptool` and a terminal. The
+The full manual installation requires `esptool` and a terminal. The
 [installation guide](docs/INSTALL.md) has eight steps, and most of the time
 goes into two full backups. In short:
 
 1. Back up the whole flash twice.
+
 2. Run [`tools/preflight.py`](tools/preflight.py) on the backups. It compares
-   them with the tested NOTE4C and says `READY` or `STOP`.
-3. Write two files from the [0.5.0 release](https://github.com/fiedoruk/emini-home/releases/tag/v0.5.0):
+   them with the tested RockBase NM-EPD-420 and says `READY` or `STOP`.
+
+3. Write two files from the release:
    the partition table at `0x8000` and the application at `0x20000`. The
    bootloader and factory data stay untouched.
+
 4. Verify, start and continue on your phone.
 
 ## Status
 
-Where 0.5.0 stands:
+Where nm-epd-weather 0.6.0 stands:
 
-- **Tested on one NOTE4C Devkit** (ESP32-S3, 16 MiB flash, factory partition
-  layout). This release was written and verified on that unit with the
-  sequence from the installation guide: backups, preflight check, write and
-  verify.
-- **Phone setup** has been done end to end from an iPhone on that unit, from
+* **Tested on one RockBase NM-EPD-420 Devkit** (ESP32-S3, 16 MiB flash, 8 MiB octal PSRAM). The preflight check compares your backups with that unit's factory
+  flash.
+
+* **Phone setup** has been done end to end from an iPhone on that unit, from
   the setup Wi-Fi to the panel on the home network. Android phones have not
   been tried yet.
-- **Starting over**, which erases only the settings area, has been done on
-  that unit: the area read back empty and Home opened the setup screen.
-- **A full picture change takes about 25 seconds**, measured on that unit
-  over USB power.
-- **Location** comes from a town you search for in the panel, or from an
+
+* **Starting over**, which erases only the settings area, has been done on
+  that unit: the area read back empty and the device opened the setup screen.
+
+* **Location** comes from a town you search for in the panel, or from an
   estimate based on your internet address, which can land on your provider's
   city.
-- **Battery life has not been measured.** The panel shows voltage and a rough
-  percentage. Wi-Fi stays on and there is no deep sleep yet.
-- **Going back to the factory firmware** uses the standard esptool procedure
-  and has not yet been tried on a real unit.
-- **Updates** are installed over USB. There is no over-the-air update mechanism.
 
-If you install it, a [hardware report](https://github.com/fiedoruk/emini-home/issues/new?template=hardware-report.yml)
-helps the next person decide.
+* **Battery life depends on the power mode.** It has not been comprehensively tested for the NM-EPD-420 in this port. The panel shows voltage and a rough percentage.
+
+* **Updates** are installed over USB. There is no over-the-air update mechanism.
 
 ## Privacy
 
-Home talks to MET Norway for weather, to the news feed you choose, to FreeIPAPI
+The device talks to MET Norway for weather, to the news feed you choose, to FreeIPAPI
 for an approximate location and to public time servers. While the Air screen is
 switched on, it also sends the saved coordinates to the Open-Meteo Air Quality
-API for air quality, UV and pollen. When you search for a town, your phone's
+API for air quality, UV and pollen. Weather, news and air quality are fetched only
+while their screens are switched on. When you search for a town, your phone's
 browser sends the search to Open-Meteo. Each of these services sees an ordinary
-request from your internet address. Nothing goes to emini, and the firmware has
+request from your internet address. Nothing goes to the original emini servers, and the firmware has
 no analytics. The panel runs over HTTP on your local network and settings are
 stored on the device without encryption, so keep the device on a network and in
 a home you trust. Details: [privacy](docs/PRIVACY.md).
 
 ## Build it yourself
 
-The firmware builds with ESP-IDF v6.0 and nothing else; see
+The firmware builds with ESP-IDF v6.0.2. The RockBase NM-EPD-420 requires external RAM for frame buffer allocations. Ensure that **Octal Mode PSRAM** is enabled in `idf.py menuconfig`. See
 [building from source](docs/BUILD.md). Hardware details and the flash layout
 are in [hardware](docs/HARDWARE.md).
 
-## How it was built
-
-One person directing two AI coding agents, Claude Code and Codex. I set the
-direction, made the calls and tested the firmware on a NOTE4C.
-
 ## Security
 
-Please report vulnerabilities privately through
-[GitHub security advisories](https://github.com/fiedoruk/emini-home/security/advisories/new).
+Please report vulnerabilities privately through GitHub security advisories.
 [SECURITY.md](SECURITY.md) lists the known limits of this release.
 
 ## Credits and licence
 
-emini Home is released under the [MIT License](LICENSE).
+nm-epd-weather is released under the [MIT License](LICENSE).
 
-- Weather data from [MET Norway](https://api.met.no/), licensed CC BY 4.0.
-- Place search by [Open-Meteo.com](https://open-meteo.com/), using location
+* This port is forked from the original [emini-home by fiedoruk](https://github.com/fiedoruk/emini-home).
+
+* Weather data from [MET Norway](https://api.met.no/), licensed CC BY 4.0.
+
+* Air quality, UV and pollen from the [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api), licensed CC BY 4.0.
+
+* Place search by [Open-Meteo.com](https://open-meteo.com/), using location
   data from [GeoNames](https://www.geonames.org/), licensed CC BY 4.0.
-- Approximate location from [FreeIPAPI](https://freeipapi.com/).
-- Headlines belong to their publishers; the default feed is BBC World.
-- Display driver and battery curve adapted from the
-  [NOTE4C reference firmware by LazyYoun](https://github.com/LazyYoun/youn-ink-fourcolor-firmware) (MIT).
-- Typeface: [Atkinson Hyperlegible Next](https://github.com/googlefonts/atkinson-hyperlegible-next) (SIL OFL 1.1).
-- Chinese glyphs: [Noto Sans CJK SC](https://github.com/notofonts/noto-cjk) (SIL OFL 1.1), GB 2312 level 1.
-- Small text (12 and 16 px): [TRMNL12 and TRMNL16](https://github.com/usetrmnl/trmnl-framework) pixel fonts by Heavyweight Digital Type Foundry for TRMNL (SIL OFL 1.1).
-- Built on [ESP-IDF](https://github.com/espressif/esp-idf); all components and
+
+* Approximate location from [FreeIPAPI](https://freeipapi.com/).
+
+* Headlines belong to their publishers; the default feed is BBC World.
+
+* Typeface: [Atkinson Hyperlegible Next](https://github.com/googlefonts/atkinson-hyperlegible-next) (SIL OFL 1.1).
+
+* Chinese glyphs: [Noto Sans CJK SC](https://github.com/notofonts/noto-cjk) (SIL OFL 1.1), GB 2312 levels 1 and 2.
+
+* Small text (12 and 16 px): [TRMNL12 and TRMNL16](https://github.com/usetrmnl/trmnl-framework) pixel fonts by Heavyweight Digital Type Foundry for TRMNL (SIL OFL 1.1).
+
+* Built on [ESP-IDF](https://github.com/espressif/esp-idf); all components and
   licences are listed in [third-party notices](THIRD_PARTY_NOTICES.md).
 
-ZECTRIX and NOTE4C may be trademarks of their owner. The author bought the
-NOTE4C used for development at the retail price. emini Home is an independent
-project, not made or sponsored by ZECTRIX.
+RockBase and NM-EPD-420 may be trademarks of their owner. nm-epd-weather is an independent
+project.

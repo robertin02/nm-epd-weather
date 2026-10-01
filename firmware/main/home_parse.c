@@ -341,7 +341,7 @@ bool home_parse_weather(const char *json, size_t len, home_weather_t *out, int64
     bool ok = false;
     const char *reason = "Invalid weather schema";
     home_weather_t parsed = {0};
-    parsed.low = parsed.high = parsed.precipitation = parsed.wind_speed = parsed.cloud_cover = NAN;
+    parsed.low = parsed.high = parsed.precipitation = parsed.wind_speed = parsed.cloud_cover = parsed.pressure = NAN;
     for (unsigned i = 0; i < 12; ++i)
         parsed.hourly_temperature[i] = parsed.hourly_rain[i] = NAN;
     const cJSON *properties = member(root, "properties"), *meta = member(properties, "meta");
@@ -376,6 +376,8 @@ bool home_parse_weather(const char *json, size_t len, home_weather_t *out, int64
             if (!metric(instant(point), "wind_speed", 0, 150, false, &parsed.wind_speed) ||
                 !metric(instant(point), "cloud_area_fraction", 0, 100, false,
                         &parsed.cloud_cover) ||
+                !metric(instant(point), "air_pressure_at_sea_level", 800, 1200, false, 
+                        &parsed.pressure) ||
                 !rain(point, &parsed.precipitation)) {
                 reason = "Invalid weather metric";
                 goto done;

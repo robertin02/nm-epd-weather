@@ -118,6 +118,7 @@ static const phrase_t chinese[] = {
     {"Dry until %s", "%s 前无降水"},
     {"EU index", "欧盟指数"},
     {"FORECAST", "预报"},
+    // {"HOME · %.1f°C · %.0f %%", "HOME · %.1f°C · %.0f %%"},
     {"First quarter", "上弦月"},
     {"Fog", "雾"},
     {"Full in %d days", "%d 天后满月"},
@@ -248,7 +249,6 @@ static void pixel(canvas_t *c, int x, int y, int p)
     
     // Ignorujemy oryginalną intensywność, rzutując kolory pod ekran 3-kolorowy:
     // Kolor żółty (YELLOW = 2) nie istnieje na Twoim ekranie, rzutujemy go na czerwony.
-    if (p == YELLOW) p = RED;
 
     // Podział bufora:
     // Pierwsza połowa (15000 bajtów) to warstwa Czarno-Biała (BW)
@@ -301,18 +301,10 @@ static int mix(canvas_t *c, int x, int y, int a, int b, float coverage)
     /* cell is 1/2/4; shifting avoids two runtime divisions per pigment pixel. */
     int shift = c->cell >> 1;
     if (c->intensity == 0) {
-        if (a == YELLOW)
-            a = PAPER;
-        if (a == RED)
-            a = BLACK;
-        if (b == YELLOW)
-            b = PAPER;
-        if (b == RED)
-            b = BLACK;
+    if (a == RED) a = BLACK;
+    if (b == RED) b = BLACK;
     }
-    /* Colour is never finer than 2 px; black-and-paper patterns keep 1 px. */
-    if (shift == 0 && (a == YELLOW || a == RED || b == YELLOW || b == RED))
-        shift = 1;
+    if (shift == 0 && (a == RED || b == RED)) shift = 1;
     if (c->intensity == 1)
         coverage *= 0.55f;
     return coverage > threshold(c, x, y, b, shift) ? b : a;
@@ -325,19 +317,15 @@ static int mix3(canvas_t *c, int x, int y, int a, int b, int d, float wa, float 
 {
     int shift = c->cell >> 1;
     if (c->intensity == 0) {
-        a = a == YELLOW ? PAPER : a == RED ? BLACK : a;
-        b = b == YELLOW ? PAPER : b == RED ? BLACK : b;
-        d = d == YELLOW ? PAPER : d == RED ? BLACK : d;
+    a = a == RED ? BLACK : a;
+    b = b == RED ? BLACK : b;
+    d = d == RED ? BLACK : d;
     }
-    if (shift == 0 && (a == YELLOW || a == RED || b == YELLOW || b == RED || d == YELLOW || d == RED))
-        shift = 1;
-    if (c->intensity == 1) { /* less colour: every colour share, whichever slot holds it */
-        if (a == YELLOW || a == RED)
-            wa *= 0.55f;
-        if (b == YELLOW || b == RED)
-            wb *= 0.55f;
-        if (d == YELLOW || d == RED)
-            wd *= 0.55f;
+    if (shift == 0 && (a == RED || b == RED || d == RED)) shift = 1;
+    if (c->intensity == 1) { 
+        if (a == RED) wa *= 0.55f;
+        if (b == RED) wb *= 0.55f;
+        if (d == RED) wd *= 0.55f;
     }
     wa = wa < 0 ? 0 : wa;
     wb = wb < 0 ? 0 : wb;
@@ -586,9 +574,16 @@ static void txt(canvas_t *c, int x, int y, int w, int h, int fi, const char *s)
 }
 static void top(canvas_t *c, const home_config_t *cfg, const char *section)
 {
-    text(c, 14, 7, 192, 20, 1, BLACK, cfg->name[0] ? cfg->name : "emini HOME", sizeof cfg->name);
-    int tw = width(0, section, 96);
-    txt(c, imax(212, 386 - tw), 9, 174, 17, 0, section);
+    char combined[128];
+    const char *name = cfg->name[0] ? cfg->name : "emini HOME";
+    
+    if (section && section[0]) {
+        snprintf(combined, sizeof(combined), "%s · %s", name, section);
+    } else {
+        snprintf(combined, sizeof(combined), "%s", name);
+    }
+    
+    text(c, 14, 7, 372, 20, 1, BLACK, combined, sizeof(combined));
     rect(c, 14, 31, 372, 1, BLACK);
 }
 static void stamp(char *out, size_t len, int64_t epoch, int lang, bool clock24, const char *zone)
@@ -694,10 +689,11 @@ static void empty(canvas_t *c, const home_config_t *cfg, home_screen_t screen,
         float t = (x - 280) / 120.0f;
         for (int y = 43; y < 243; ++y) {
             pixel(c, x, y,
-                  mix3(c, x, y, PAPER, YELLOW, RED, 1.0f - 0.8f * t, 0.8f * t * (1.0f - 0.5f * t),
-                       0.4f * t * t));
+                //   mix3(c, x, y, PAPER, YELLOW, RED, 1.0f - 0.8f * t, 0.8f * t * (1.0f - 0.5f * t),   0.4f * t * t)
+                mix(c, x, y, PAPER, RED, t));
             if ((x + y / 2) % 31 == 0)
-                pixel(c, x, y, mix(c, x, y, YELLOW, RED, 0.4f));
+                // pixel(c, x, y, mix(c, x, y, YELLOW, RED, 0.4f));
+                pixel(c, x, y, RED);
         }
     }
     c->raster = RASTER_NOISE;
@@ -889,9 +885,9 @@ static void disc(canvas_t *c, int cx, int cy, int rx, int ry, const home_weather
             if (r > 1.0f)
                 continue;
             int p =
-                night ? mix(c, x, y, PAPER, BLACK, night_shade) : mix(c, x, y, YELLOW, RED, shade);
+                night ? mix(c, x, y, PAPER, BLACK, night_shade) : mix(c, x, y, PAPER, RED, shade);
             if (dx < -0.35f && r > 0.36f && ((int)(sqrtf(r) * 40.0f) % 7) == 0)
-                p = night ? PAPER : YELLOW;
+                p = night ? PAPER : RED;
             if (dy > edge)
                 p = mix(c, x, y, PAPER, BLACK, obscured_shade);
             pixel(c, x, y, p);
@@ -913,9 +909,12 @@ static void rain_field(canvas_t *c, const home_weather_t *w, int y0, int y1)
         for (int y = y0; y < y1; ++y) {
             if (y >= horizon) {
                 float d = (y - horizon) * inv_depth;
-                int p = mix(c, x, y, PAPER, YELLOW, d * 0.95f);
-                if (p == YELLOW)
-                    p = mix(c, x, y, YELLOW, RED, d * warmth);
+                // int p = mix(c, x, y, PAPER, YELLOW, d * 0.95f);
+                // if (p == YELLOW)
+                //     p = mix(c, x, y, YELLOW, RED, d * warmth);
+                int p = mix(c, x, y, PAPER, BLACK, d * 0.97f);
+                if (p == BLACK)
+                    p = mix(c, x, y, BLACK, RED, d * warmth);
                 pixel(c, x, y, p);
             }
             if (wet && (x + wind_shift[y]) % 13 == 0 && (y - y0) % 9 < rain_rows)
@@ -960,7 +959,8 @@ static void forecast_graph(canvas_t *c, const home_weather_t *w, int x, int y, i
         int py = y + hh - 1 - (int)((value - low) / (high - low) * (hh - 1));
         float shade_step = 0.78f / imax(1, y + hh - py);
         for (int yy = py; yy < y + hh; ++yy)
-            pixel(c, x + xx, yy, mix(c, x + xx, yy, YELLOW, RED, (yy - py) * shade_step));
+            //pixel(c, x + xx, yy, mix(c, x + xx, yy, YELLOW, RED, (yy - py) * shade_step));
+            pixel(c, x + xx, yy, mix(c, x + xx, yy, PAPER, RED, (yy - py) * shade_step));
         if (xx)
             line(c, lastx, lasty, x + xx, py, BLACK);
         lastx = x + xx;
@@ -980,7 +980,7 @@ static void weather(canvas_t *c, const home_config_t *cfg, const home_data_t *d,
     int lang = lang_of(cfg);
     bool f = cfg->units[0] == 'F';
     int style = cfg->style[HOME_WEATHER] <= HOME_ATLAS ? cfg->style[HOME_WEATHER] : HOME_PRINT;
-    char label[160], value[32], range[80], metrics[128], rain[64], wind[32], a[24], b[24];
+    char label[160], value[32], range[80], metrics[156], rain[64], wind[32], a[24], b[24];
     snprintf(label, sizeof label, "%.64s",
              cfg->location[0] ? cfg->location : tr(lang, "Weather", "Pogoda"));
     top(c, cfg, label);
@@ -1004,17 +1004,42 @@ static void weather(canvas_t *c, const home_config_t *cfg, const home_data_t *d,
     } else
         snprintf(range, sizeof range, "°%s · %s", f ? "F" : "C",
                  tr(lang, "No range", "Brak zakresu"));
+    // if (!rain_outlook(rain, sizeof rain, cfg, w, now))
+    //     rain_amount(rain, sizeof rain, w, lang);
+    // if (isfinite(w->wind_speed)) {
+    //     number(a, sizeof a, clamp(w->wind_speed, 0, 150), 1, lang);
+    //     snprintf(wind, sizeof wind, tr(lang, "Wind %s m/s", "Wiatr %s m/s"), a);
+    // } else {
+    //     snprintf(wind, sizeof wind, "%s", tr(lang, "Wind —", "Wiatr —"));
+    // }
+
+    // // Dodanie ciśnienia atmosferycznego po kropce do głównego paska metryk
+    // if (isfinite(w->pressure) && w->pressure > 0) {
+    //     snprintf(metrics, sizeof metrics, "%s · %s · %.0f hPa", rain, wind, w->pressure);
+    // } else {
+    //     snprintf(metrics, sizeof metrics, "%s · %s", rain, wind);
+    // }
     if (!rain_outlook(rain, sizeof rain, cfg, w, now))
         rain_amount(rain, sizeof rain, w, lang);
+        
     if (isfinite(w->wind_speed)) {
         number(a, sizeof a, clamp(w->wind_speed, 0, 150), 1, lang);
         snprintf(wind, sizeof wind, tr(lang, "Wind %s m/s", "Wiatr %s m/s"), a);
-    } else
+    } else {
         snprintf(wind, sizeof wind, "%s", tr(lang, "Wind —", "Wiatr —"));
-    snprintf(metrics, sizeof metrics, "%s · %s", rain, wind);
+    }
+
+    char pressure_str[32] = "";
+    if (isfinite(w->pressure) && w->pressure > 0) {
+        snprintf(pressure_str, sizeof(pressure_str), " · %.0f hPa", w->pressure);
+    }
+
+    snprintf(metrics, sizeof metrics, "%s · %s%s", rain, wind, pressure_str);
+    
     if (width(1, metrics, sizeof metrics) > 372) {
-        rain_amount(rain, sizeof rain, w, lang);
-        snprintf(metrics, sizeof metrics, "%s · %s", rain, wind);
+        rain_amount(rain, sizeof rain, w, lang); 
+        
+        snprintf(metrics, sizeof metrics, "%s · %s%s", rain, wind, pressure_str);
     }
     int raster = c->brush;
     if (style == HOME_RHYTHM) {
@@ -1034,7 +1059,8 @@ static void weather(canvas_t *c, const home_config_t *cfg, const home_data_t *d,
         for (int x = 0; x < W; ++x) {
             float coverage = cloud * (x / 400.0f) * 0.5f;
             for (int y = 141; y < 216; ++y)
-                pixel(c, x, y, mix(c, x, y, PAPER, YELLOW, coverage));
+                // pixel(c, x, y, mix(c, x, y, PAPER, YELLOW, coverage));
+                pixel(c, x, y, mix(c, x, y, PAPER, BLACK, coverage));
         }
         forecast_graph(c, w, 14, 146, 372, 70);
         c->raster = RASTER_NOISE;
@@ -1051,7 +1077,7 @@ static void weather(canvas_t *c, const home_config_t *cfg, const home_data_t *d,
         for (int y = 38; y < 250; ++y)
             for (int x = 0; x < 196; ++x)
                 if ((x + y) % 17 < 2)
-                    pixel(c, x, y, YELLOW);
+                    pixel(c, x, y, RED);
         c->raster = raster;
         disc(c, 90, 132, 102, 99, w);
         c->raster = RASTER_NOISE;
@@ -1091,9 +1117,9 @@ static void weather(canvas_t *c, const home_config_t *cfg, const home_data_t *d,
              * remain, instead of38016 per full Print weather scene. */
             int wave = (int)(wind * 2 * sin(x / 61.0));
             for (int y = 35; y < 211; ++y) {
-                int p = mix(c, x, y, PAPER, YELLOW, coverage);
+                int p = mix(c, x, y, PAPER, RED, coverage);
                 if (((y + wave) % 13) == 0)
-                    p = mix(c, x, y, PAPER, YELLOW, 0.72f);
+                    p = mix(c, x, y, PAPER, RED, 0.72f);
                 pixel(c, x, y, p);
             }
         }
@@ -1112,13 +1138,14 @@ static void weather(canvas_t *c, const home_config_t *cfg, const home_data_t *d,
         txt(c, 14, 236, 372, 23, 1, metrics);
     }
     if (d->local_sensor_valid) {
-    char local_txt[64];
-    // Sklejamy odczyty w jeden tekst (np. "W DOMU: 23.5 C / 45 %")
-    snprintf(local_txt, sizeof(local_txt), "W DOMU: %.1f C / %.0f %%", d->local_temperature, d->local_humidity);
-    
-    // Rysujemy na canvasie: (x: 250, y: 15, width: 140, height: 20, font: 1)
-    // Omijamy sekcje pogody, umieszczając to wysoko po prawej stronie.
-    txt(c, 210, 10, 180, 20, 1, local_txt); 
+        char local_txt[64];
+        const char *indoor_label = (lang == LANG_PL) ? "W DOMU" :
+                                   (lang == LANG_ZH) ? "室内" : 
+                                   "INDOORS";
+        
+        snprintf(local_txt, sizeof(local_txt), "%s: %.1f C / %.0f %%", 
+                 indoor_label, d->local_temperature, d->local_humidity);
+    txt(c, 210, 10, 190, 20, 1, local_txt); 
     }
     source_footer(c, cfg, &w->meta, now, "MET Norway · CC BY 4.0", w->forecast_at);
 }
@@ -1155,9 +1182,9 @@ static void signature(canvas_t *c, const char *s, size_t cap, int style, int top
                             : style == HOME_ATLAS
                                 ? (0.5f + 0.5f * cosf(sqrtf(dx * dx + dy * dy) / 13.0f + phase))
                                 : (x / 399.0f);
-            pixel(c, x, y, mix(c, x, y, YELLOW, RED, pattern * a * 0.88f));
+            pixel(c, x, y, mix(c, x, y, PAPER, RED, pattern * a * 0.88f));
             if (style == HOME_PRINT && ((x + (hash % 11)) % 21 == 0))
-                pixel(c, x, y, mix(c, x, y, PAPER, YELLOW, 0.6f));
+                pixel(c, x, y, mix(c, x, y, PAPER, BLACK, 0.6f));
         }
     }
 }
@@ -1354,7 +1381,7 @@ static int pm25_level(double v)
 static int pm_tone(canvas_t *c, int x, int y, double v)
 {
     float t = (float)clamp(v / 75.0, 0, 1);
-    return mix3(c, x, y, PAPER, YELLOW, RED, (1 - t) * (1 - t), 2 * t * (1 - t) + 0.08f, t * t);
+    return mix(c, x, y, PAPER, RED, t);
 }
 static void tone_fill(canvas_t *c, int x, int y, int w, int h, double v)
 {
@@ -1445,13 +1472,13 @@ static void uv_sun(canvas_t *c, int cx, int cy, double uv, double size)
             /* the heat of a pixel is that of its 2 px cell, so yellow and red never split a cell (R0) */
             int dx = (x & ~1) + 1 - cx, dy = (y & ~1) + 1 - cy;
             if (dx * dx + dy * dy <= r * r)
-                pixel(c, x, y, mix(c, x, y, YELLOW, RED, heat * (1.0f - (dx * dx + dy * dy) / (float)(r * r))));
+                pixel(c, x, y, mix(c, x, y, PAPER, RED, heat * (1.0f - (dx * dx + dy * dy) / (float)(r * r))));
         }
     for (int k = 0; k < 8; ++k) {
         double ang = k * 3.14159265358979323846 / 4;
         int x0 = cx + (int)((r + 3) * cos(ang)), y0 = cy + (int)((r + 3) * sin(ang));
         int x1 = cx + (int)((r + 7 + (k & 1) * 3) * cos(ang)), y1 = cy + (int)((r + 7 + (k & 1) * 3) * sin(ang));
-        int p = uv >= 8 ? RED : YELLOW; /* 2 px thick whatever the direction (R0) */
+        int p = uv >= 8 ? RED : BLACK; /* 2 px thick whatever the direction (R0) */
         line(c, x0, y0, x1, y1, p);
         line(c, x0 + 1, y0, x1 + 1, y1, p);
         line(c, x0, y0 + 1, x1, y1 + 1, p);
@@ -1502,7 +1529,7 @@ static int pollen_row(canvas_t *c, const home_air_t *a, int x, int y, int w, int
                 for (int yy = 0; yy < 6; ++yy)
                     for (int xx = 0; xx < 6; ++xx)
                         pixel(c, ox + xx, oy + yy,
-                              level >= 3 ? RED : level == 2 ? mix(c, ox + xx, oy + yy, YELLOW, RED, 0.5f) : YELLOW);
+                              level >= 3 ? RED : level == 2 ? mix(c, ox + xx, oy + yy, BLACK, RED, 0.5f) : BLACK);
             } else {
                 rect(c, ox, oy, 6, 6, PAPER);
                 for (int e = 0; e < 6; ++e) {
@@ -1653,8 +1680,8 @@ static void air(canvas_t *c, const home_config_t *cfg, const home_air_t *a, int6
                 peak_x = gx + xx;
             }
             if (lastx >= 0) {
-                line(c, lastx, lasty, gx + xx, py, YELLOW);
-                line(c, lastx, lasty + 1, gx + xx, py + 1, YELLOW);
+                line(c, lastx, lasty, gx + xx, py, BLACK);
+                line(c, lastx, lasty + 1, gx + xx, py + 1, BLACK);
             }
             lastx = gx + xx;
             lasty = py;
@@ -1679,7 +1706,7 @@ static void air(canvas_t *c, const home_config_t *cfg, const home_air_t *a, int6
                 if (r > ro)
                     continue;
                 if (r < ri) {
-                    pixel(c, x, y, mix(c, x, y, PAPER, YELLOW, 0.55f * (float)((r / ri) * (r / ri))));
+                    pixel(c, x, y, mix(c, x, y, PAPER, RED, 0.55f * (float)((r / ri) * (r / ri))));
                     continue;
                 }
                 double ang = atan2(dx, -dy);
@@ -1940,13 +1967,13 @@ typedef struct {
 static tone_t sky_tone(double alt)
 {
     static const tone_t steps[7] = {
-        {PAPER, YELLOW, BLACK, 0.06f, 0.94f, 0.00f}, /* above 8 deg: the full day */
-        {PAPER, YELLOW, RED, 0.14f, 0.80f, 0.06f},   /* 3 to 8: the first warmth */
-        {PAPER, YELLOW, RED, 0.06f, 0.62f, 0.32f},   /* 0 to 3: gold turning orange */
-        {YELLOW, RED, BLACK, 0.42f, 0.43f, 0.15f},   /* -3 to 0: the sunset itself */
-        {YELLOW, BLACK, PAPER, 0.22f, 0.75f, 0.03f}, /* -6 to -3: civil twilight, no red alone on black (R2-3) */
-        {YELLOW, BLACK, PAPER, 0.05f, 0.92f, 0.03f}, /* -12 to -6: nautical twilight */
-        {PAPER, BLACK, RED, 0.03f, 0.97f, 0.00f},    /* night, with stars */
+        {PAPER, PAPER, BLACK, 1.00f, 0.00f, 0.00f}, /* above 8 deg: the full day */
+        {PAPER, RED,   BLACK, 0.90f, 0.10f, 0.00f},   /* 3 to 8: the first warmth */
+        {PAPER, RED,   BLACK, 0.60f, 0.40f, 0.00f},   /* 0 to 3: gold turning orange */
+        {PAPER, RED,   BLACK, 0.20f, 0.60f, 0.20f},   /* -3 to 0: the sunset itself */
+        {PAPER, RED,   BLACK, 0.05f, 0.20f, 0.75f}, /* -6 to -3: civil twilight, no red alone on black (R2-3) */
+        {PAPER, RED,   BLACK, 0.03f, 0.05f, 0.92f}, /* -12 to -6: nautical twilight */
+        {PAPER, RED,   BLACK, 0.03f, 0.00f, 0.97f},    /* night, with stars */
     };
     int i = alt >= 8 ? 0 : alt >= 3 ? 1 : alt >= 0 ? 2 : alt >= -3 ? 3 : alt >= -6 ? 4
             : alt >= -12                                                           ? 5
@@ -1957,7 +1984,7 @@ static tone_t sky_tone(double alt)
  * reaches the horizon. Fills the dome of Print and the curve of Rhythm. */
 static tone_t warm_fill(double alt, float lift)
 {
-    tone_t t = {PAPER, YELLOW, RED, 0.05f, 0.95f, 0.00f};
+    tone_t t = {PAPER, RED, BLACK, 0.05f, 0.95f, 0.00f};
     double a = alt < 0 ? 0 : alt > 24 ? 24 : alt;
     float heat = (float)(1.0 - a / 24.0);
     t.wa = 0.06f * lift;
@@ -2066,7 +2093,7 @@ static void sun_mark(canvas_t *c, int cx, int cy, int r, double alt)
                 continue;
             float v = clampf((reach - d) / (float)(reach - r), 0.0f, 1.0f);
             pixel(c, xx, yy,
-                  mix3(c, xx, yy, PAPER, YELLOW, RED, 1.0f - v, v * 0.80f, v * v * 0.50f));
+                  mix(c, xx, yy, PAPER, RED, v));
         }
     for (int yy = cy - r; yy <= cy + r; ++yy)
         for (int xx = cx - r; xx <= cx + r; ++xx) {
@@ -2119,7 +2146,7 @@ static void sun_dome(canvas_t *c, const sky_t *k, int x, int y, int w, int h)
                 float v = clampf((float)(horizon - (yy & ~1)) / (float)(horizon - top + 1), 0, 1);
                 float low = (1.0f - v) * (1.0f - v) * (1.0f - v);
                 pixel(c, xx, yy,
-                      mix3(c, xx, yy, PAPER, YELLOW, RED, 0.10f * v, 0.42f + 0.50f * v,
+                      mix3(c, xx, yy, PAPER, RED, BLACK, 0.10f * v, 0.42f + 0.50f * v,
                            0.60f * low));
             }
             rect(c, xx, top - 1, 1, 2, BLACK);
@@ -2363,8 +2390,7 @@ void home_render(const home_config_t *cfg, const home_data_t *data, home_screen_
 static int battery_pigment(canvas_t *c, int x, int y, int percent)
 {
     float t = 1.0f - (float)clamp(percent, 0, 100) / 100.0f; /* 0 full, 1 empty */
-    return mix3(c, x, y, PAPER, YELLOW, RED, (1 - t) * (1 - t) * 1.2f, 2 * t * (1 - t) + 0.25f,
-                t * t * 1.4f);
+    return mix(c, x, y, PAPER, RED, t);
 }
 static void battery_bar(canvas_t *c, int x, int y, int w, int h, int percent, bool charging)
 {
@@ -2415,10 +2441,10 @@ static int readpx(const canvas_t *c, int x, int y)
         return PAPER;
     unsigned byte_index = (unsigned)y * 50u + (unsigned)x / 8u;
     unsigned bit_shift = 7u - ((unsigned)x % 8u);
-    // Jeśli na warstwie czerwonej jest bit 1, to u nas reprezentuje YELLOW, by wordmark zadziałał poprawnie
+
     if ((c->frame[15000 + byte_index] >> bit_shift) & 1)
-        return YELLOW; 
-    // Sprawdzanie warstwy BW: 1 to biały, 0 to czarny
+        return RED; 
+
     if (!((c->frame[byte_index] >> bit_shift) & 1))
         return BLACK;
     return PAPER;
@@ -2439,13 +2465,13 @@ static void wordmark(canvas_t *c, int x, int y, int w, int h)
     }
     if (!tw)
         tw = width(fi, name, 16);
-    text(c, x + imax(0, (w - tw) / 2), y, w, h, fi, YELLOW, name, 16);
+    text(c, x + imax(0, (w - tw) / 2), y, w, h, fi, RED, name, 16);
     int raster = c->raster;
     c->raster = RASTER_DOTS;
     for (int yy = imax(y, 0); yy < imin(y + h, H); ++yy)
         for (int xx = imax(x, 0); xx < imin(x + w, W); ++xx)
-            if (readpx(c, xx, yy) == YELLOW)
-                pixel(c, xx, yy, mix(c, xx, yy, PAPER, YELLOW, 0.66f));
+            if (readpx(c, xx, yy) == RED)
+                pixel(c, xx, yy, mix(c, xx, yy, PAPER, RED, 0.66f));
     c->raster = raster;
 }
 static void info_battery_line(const home_stats_t *s, char *line, size_t cap, int lang)
@@ -2513,7 +2539,7 @@ static void info_nerd(canvas_t *c, const home_config_t *cfg, const home_stats_t 
     for (int y = 32; y < 188; ++y) {
         float fade = 0.13f * (1.0f - (float)((y & ~1) - 32) / 156.0f);
         for (int x = 198; x < 390; ++x)
-            pixel(c, x, y, mix(c, x, y, PAPER, YELLOW, fade));
+            pixel(c, x, y, mix(c, x, y, PAPER, RED, fade));
     }
     txt(c, 14, 36, 176, 15, 0, tr(lang, "BATTERY", "BATERIA"));
     if (s->percent >= 0)

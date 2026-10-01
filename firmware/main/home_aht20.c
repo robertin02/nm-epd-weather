@@ -78,6 +78,6 @@ void home_aht20_task(void *unused) {
             ESP_LOGE(TAG, "Błąd komunikacji I2C z AHT20");
         }
         
-        vTaskDelay(pdMS_TO_TICKS(10000)); // Przerwa 10s
+        vTaskDelay(pdMS_TO_TICKS(600 * 1000));
     }
 }

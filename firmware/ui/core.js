@@ -479,13 +479,48 @@
     return timedOut ? "unconfirmed" : "connecting";
   }
   function decodeFrame(input) {
-    const b = input instanceof Uint8Array ? input : new Uint8Array(input);
-    if (b.length !== 30000) throw new Error("frame_size");
+    const b = input instanceof Uint8Array
+        ? input
+        : new Uint8Array(input);
+
+    if (b.length !== 30000)
+        throw new Error("frame_size");
+
     const rgba = new Uint8ClampedArray(400 * 300 * 4);
+
+    const bw = b.subarray(0, 15000);
+    const red = b.subarray(15000, 30000);
+
     for (let i = 0; i < 120000; i++) {
-      const c = palette[(b[i >> 2] >> (6 - (i % 4) * 2)) & 3];
-      rgba.set([c[0], c[1], c[2], 255], i * 4);
+
+        const mask = 0x80 >> (i & 7);
+
+        const bwBit =
+            (bw[i >> 3] & mask) !== 0;
+
+        const redBit =
+            (red[i >> 3] & mask) !== 0;
+
+        let c;
+
+        if (redBit) {
+            c = [220, 0, 0];
+        }
+        else if (!bwBit) {
+            c = [0, 0, 0];
+        }
+        else {
+            c = [255, 255, 255];
+        }
+
+        const o = i * 4;
+
+        rgba[o + 0] = c[0];
+        rgba[o + 1] = c[1];
+        rgba[o + 2] = c[2];
+        rgba[o + 3] = 255;
     }
+
     return rgba;
   }
   function validate(c, recipe = false) {

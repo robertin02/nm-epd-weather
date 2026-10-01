@@ -1,6 +1,6 @@
 # Set up emini Home from your phone
 
-emini Home has no app. The NOTE4C serves its own settings page, and your phone
+emini Home has no app. The RockBase device serves its own settings page, and your phone
 opens it in the browser. Your settings are saved on the device; the browser
 keeps only its access token and the panel's own language and theme.
 
@@ -14,7 +14,7 @@ keeps only its access token and the panel's own language and theme.
 
 On first start, the display shows **Connect your phone** with two QR codes.
 Once the current picture has finished drawing, you can also open the setup
-window by holding **OK / BOOT for 2 seconds**. It stays open for 5 minutes.
+window by holding **BOOT (GPIO 0) for 2 seconds**. It stays open for 5 minutes.
 
 1. Scan the first QR code, or join the Wi-Fi network **emini.ink** with the
    password printed on the display.
@@ -42,7 +42,7 @@ for everyday use.
 ## 2. Bring the device onto your Wi-Fi
 
 Right after pairing, the panel shows **Your home Wi-Fi** with a list of nearby
-networks. Pick yours and enter its password. The NOTE4C joins 2.4 GHz networks
+networks. Pick yours and enter its password. The RockBase device joins 2.4 GHz networks
 with WPA2 or WPA3 Personal; open networks are not supported, and a hidden
 network can be typed in by name. You can also choose **Set up later** and find
 the same page under **Settings → Wi-Fi connection**.
@@ -53,7 +53,7 @@ When the device joins your network, your phone may lose the setup network, and
 the setup network closes anyway when the 5-minute window ends. Reconnect the
 phone to your home Wi-Fi and open the local address shown in the panel. Your
 browser treats the new address as a new site, so the panel asks for a pairing
-code again. If the setup window has closed by then, hold OK / BOOT for 2 seconds
+code again. If the setup window has closed by then, hold BOOT for 2 seconds
 to open a new one.
 
 ## 3. The Home tab
@@ -94,7 +94,7 @@ Tap a screen to open its page:
 <p align="center"><img src="images/panel-edit.webp" width="260" alt="The Weather screen page with a preview of the saved settings, source and update times, and the saved location"></p>
 
 Tap **Save settings** to store your changes on the device, then **Show now** to
-put the saved picture on the display. The pigments need about 25 seconds to
+put the saved picture on the display. The pigments need time to
 settle, and button presses during that time are ignored.
 
 ### The place for the weather
@@ -196,25 +196,22 @@ name before you share it; the setup screen cannot be downloaded.
 
 ## Good to know
 
-- On the device, **Up** and **Down** switch between screens. A short press on
-  **OK / BOOT** shows the **emini card** for two minutes: the battery with an
+- On the device, the **USER** button switches between screens. A short press on
+  **BOOT** shows the **emini card** for two minutes: the battery with an
   estimate of how long the charge lasts, a few counters and a week of battery.
   Press again to send it away. In **Settings → Preferences** the button can do
   another job instead: check for updates, hold the current screen (press again
   to resume) or open the setup window. While the card is up the picture
   underneath stays where it is, and a side button sends the card away.
-  Holding OK / BOOT for 2 seconds opens the setup window, and holding it again
+  Holding **BOOT** for 2 seconds opens the setup window, and holding it again
   closes it; short presses leave that card alone, so a stray press cannot take
   the pairing code off the screen while you are typing it.
-- The side buttons do more when you hold them. **Up** held for two seconds
+- The buttons do more when you hold them. **USER** held for two seconds
   holds the picture where it is, and holding it again lets the automatic
-  changes run. **Down** held for two seconds and then let go asks every source
-  for fresh data, and the screen is drawn again when the answer arrives, even
-  if nothing changed, so you can see that the press did something. **Down**
-  held for five seconds steps to the next display language: English, Polish,
+  changes run. **USER** held for five seconds steps to the next display language: English, Polish,
   Chinese and back; the same choice sits in **Preferences**.
-  On a screen set to **In turn**, Down and Up first step through its three
-  compositions and then move to the next screen.
+  On a screen set to **In turn**, USER first steps through its three
+  compositions and then moves to the next screen.
 - The panel talks to the device over HTTP on your local network. Use it on a
   home network you trust. See [privacy](PRIVACY.md).
 - To clear all settings and pairings, see
